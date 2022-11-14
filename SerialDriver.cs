@@ -77,5 +77,10 @@ namespace RemoteCW
         {
             this.keyCallback = callback;
         }
+
+        public void Stop()
+        {
+            port.Close();
+        }
     }
 }

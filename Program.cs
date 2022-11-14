@@ -21,7 +21,8 @@ namespace RemoteCW
 
             win.Show();
             Application.Run();
-            kd.Stop();
+            sd.Stop();
+            ad.Stop();
         }
     }
 }

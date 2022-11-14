@@ -18,7 +18,7 @@ namespace RemoteCW
         {
             this.key = key;
             GenerateSineTone();
-            ProcessStartInfo psi = new ProcessStartInfo("paplay", "-p --client-name RemoteCW --stream-name Key --latency 200 --rate 48000 --channels 1 --format s16le --volume 16384 --raw");
+            ProcessStartInfo psi = new ProcessStartInfo("paplay", "-p --client-name RemoteCW --stream-name Key --latency-msec 5 --rate 48000 --channels 1 --format s16le --volume 16384 --raw");
             psi.RedirectStandardInput = true;
             audioProcess = Process.Start(psi);
             audioProcess.Start();

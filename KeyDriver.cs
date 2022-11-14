@@ -12,8 +12,8 @@ namespace RemoteCW
         bool iambicMode = true;
         bool wasKeying = false;
         //Timing
-        int wpm = 15;
-        int unitMs = 80;
+        int wpm = 20;
+        int unitMs = 60;
         int toneLeft = 0;
         int totalLeft = 0;
         //Hardware
@@ -22,9 +22,6 @@ namespace RemoteCW
         bool rightKey = false;
         bool rightKeyEvent = false;
         bool lastKeyLeft = false;
-        bool keyState = false;
-        //Program state
-        bool running = true;
         SerialDriver serial;
         public KeyDriver(SerialDriver serial)
         {
@@ -151,11 +148,6 @@ namespace RemoteCW
             }
             //No keys pressed, don't send tone
             return false;
-        }
-
-        public void Stop()
-        {
-            running = false;
         }
     }
 }

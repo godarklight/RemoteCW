@@ -5,7 +5,7 @@
   <object class="GtkAdjustment" id="spinAdjustment">
     <property name="lower">1</property>
     <property name="upper">50</property>
-    <property name="value">15</property>
+    <property name="value">20</property>
     <property name="step-increment">1</property>
     <property name="page-increment">10</property>
   </object>
@@ -34,7 +34,7 @@
                 <property name="climb-rate">0.10</property>
                 <property name="snap-to-ticks">True</property>
                 <property name="numeric">True</property>
-                <property name="value">15</property>
+                <property name="value">20</property>
               </object>
               <packing>
                 <property name="expand">True</property>
