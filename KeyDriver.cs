@@ -32,14 +32,14 @@ namespace RemoteCW
         public void ProcessEvent(string input)
         {
             string[] inputSplit = input.Split(' ');
-            if (inputSplit.Length != 3)
+            if (inputSplit.Length != 2)
             {
                 //Console.WriteLine($"Faulty data: {input}");
                 return;
             }
             string channel = inputSplit[0];
-            ulong time = ulong.Parse(inputSplit[1]);
-            bool newState = inputSplit[2] == "1";
+            //ulong time = ulong.Parse(inputSplit[1]);
+            bool newState = inputSplit[1] == "1";
             if (channel == "L")
             {
                 leftKey = newState;
