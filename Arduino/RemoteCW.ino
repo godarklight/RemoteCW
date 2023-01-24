@@ -23,11 +23,11 @@ void loop() {
     if (leftPin != lastLeftPin)
     {
       Serial.write("L ");
-      Serial.write(String(nextTime).c_str());
-      String stateText = " 0";
+      //Serial.write(String(nextTime).c_str());
+      String stateText = "0";
       if (leftPin)
       {
-        stateText = " 1";
+        stateText = "1";
       }
       Serial.write(stateText.c_str());
       Serial.write("\n");
@@ -37,11 +37,11 @@ void loop() {
     if (rightPin != lastRightPin)
     {
       Serial.write("R ");
-      Serial.write(String(nextTime).c_str());
-      String stateText = " 0";
+      //Serial.write(String(nextTime).c_str());
+      String stateText = "0";
       if (rightPin)
       {
-        stateText = " 1";
+        stateText = "1";
       }
       Serial.write(stateText.c_str());
       Serial.write("\n");
