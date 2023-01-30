@@ -12,8 +12,8 @@ namespace RemoteCW
         bool iambicMode = true;
         bool wasKeying = false;
         //Timing
-        int wpm = 20;
-        int unitMs = 60;
+        int wpm = 24;
+        int unitMs = 50;
         int toneLeft = 0;
         int totalLeft = 0;
         //Hardware
@@ -22,10 +22,13 @@ namespace RemoteCW
         bool rightKey = false;
         bool rightKeyEvent = false;
         bool lastKeyLeft = false;
+        bool lastNetworkState = false;
         SerialDriver serial;
-        public KeyDriver(SerialDriver serial)
+        NetworkDriver network;
+        public KeyDriver(SerialDriver serial, NetworkDriver network)
         {
             this.serial = serial;
+            this.network = network;
             serial.SetKeyCallback(ProcessEvent);
         }
 
@@ -68,9 +71,22 @@ namespace RemoteCW
         public void SetMode(bool iambic)
         {
             this.iambicMode = iambic;
+            leftKeyEvent = false;
+            rightKeyEvent = false;
         }
 
         public bool GetState()
+        {
+            bool state = GetStateReal();
+            if (state != lastNetworkState)
+            {
+                network.Update(DateTime.UtcNow.Ticks, state);
+                lastNetworkState = state;
+            }            
+            return state;
+        }
+
+        private bool GetStateReal()
         {
             //Straight key mode
             if (!iambicMode)

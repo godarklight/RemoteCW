@@ -15,6 +15,7 @@ namespace RemoteCW
         Thread audioThread;
         bool lastTransmit = false;
         int zeroCount = 0;
+        public bool spot = false;
 
         public AudioDriver(KeyDriver key)
         {
@@ -57,7 +58,7 @@ namespace RemoteCW
                 while (currentTime - lastGenerateTime > TimeSpan.TicksPerMillisecond)
                 {
                     lastGenerateTime += TimeSpan.TicksPerMillisecond;
-                    bool transmit = key.GetState();
+                    bool transmit = key.GetState() || spot;
                     if (transmit)
                     {
                         zeroCount = 0;
@@ -67,7 +68,7 @@ namespace RemoteCW
                         zeroCount++;
                     }
                     GenerateAudioChunk(byte1ms, transmit);
-                    if (zeroCount < 1000)
+                    if (zeroCount < 1000 || spot)
                     {
                         audioProcess.StandardInput.BaseStream.Write(byte1ms, 0, byte1ms.Length);
                     }
@@ -84,7 +85,6 @@ namespace RemoteCW
             }
             if (!transmit && !lastTransmit)
             {
-
                 Array.Clear(input);
                 return;
             }

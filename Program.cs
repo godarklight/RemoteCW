@@ -13,16 +13,18 @@ namespace RemoteCW
             var app = new Application("org.RemoteCW.RemoteCW", GLib.ApplicationFlags.None);
             app.Register(GLib.Cancellable.Current);
 
+            NetworkDriver nd = new NetworkDriver();
             SerialDriver sd = new SerialDriver();
-            KeyDriver kd = new KeyDriver(sd);
+            KeyDriver kd = new KeyDriver(sd, nd);
             AudioDriver ad = new AudioDriver(kd);
-            var win = new MainWindow(sd, kd);
+            var win = new MainWindow(ad, sd, kd, nd);
             app.AddWindow(win);
 
             win.Show();
             Application.Run();
             sd.Stop();
             ad.Stop();
+            nd.Stop();
         }
     }
 }
