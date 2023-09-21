@@ -2,21 +2,17 @@ using System;
 using System.Collections.Concurrent;
 using System.IO.Ports;
 using System.Text;
-using System.Threading;
 
 namespace RemoteCW
 {
-    public class SerialDriver
+    public class ArduinoDriver
     {
         private SerialPort port;
         StringBuilder sb = new StringBuilder();
         private Action<string> uiCallback;
         private Action<string> keyCallback;
         private object lockObject = new object();
-        Thread pinThread;
-        private bool running = true;
-
-        public SerialDriver()
+        public ArduinoDriver()
         {
             string selectedPort = "";
             foreach (string portName in SerialPort.GetPortNames())
@@ -27,56 +23,11 @@ namespace RemoteCW
             port.ReadTimeout = 10;
             port.WriteTimeout = 10;
             port.DataReceived += DataReceived;
-            port.DtrEnable = true;
             port.Open();
-            pinThread = new Thread(new ThreadStart(PinThread));
-            pinThread.Start();
-        }
-
-        private void PinThread()
-        {
-            bool lastCTS = false;
-            bool lastDSR = false;
-            string sendText = "";
-            while (running)
-            {
-                if (port.DsrHolding != lastDSR)
-                {
-                    lastDSR = port.DsrHolding;
-                    sendText = "L 0";
-                    if (port.DsrHolding)
-                    {
-                        sendText = "L 1";
-                    }
-                }
-                if (sendText == "" && port.CtsHolding != lastCTS)
-                {
-                    lastCTS = port.CtsHolding;
-                    sendText = "R 0";
-                    if (port.CtsHolding)
-                    {
-                        sendText = "R 1";
-                    }
-                }
-                if (sendText != "")
-                {
-                    if (uiCallback != null)
-                    {
-                        uiCallback(sendText);
-                    }
-                    if (keyCallback != null)
-                    {
-                        keyCallback(sendText);
-                    }
-                    sendText = "";
-                }
-                Thread.Sleep(1);
-            }
         }
 
         private void DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            Console.WriteLine("DR");
             lock (lockObject)
             {
                 if (e.EventType == SerialData.Chars)
@@ -87,6 +38,24 @@ namespace RemoteCW
                         while (bytesToRead > 0)
                         {
                             int charInt = port.ReadChar();
+                            if (charInt == '\n')
+                            {
+                                string sendText = sb.ToString();
+                                sb.Clear();
+                                if (uiCallback != null)
+                                {
+                                    uiCallback(sendText);
+                                }
+                                if (keyCallback != null)
+                                {
+                                    keyCallback(sendText);
+                                }
+                                sb.Clear();
+                            }
+                            else
+                            {
+                                sb.Append((char)charInt);
+                            }
                             bytesToRead--;
                         }
                     }
@@ -111,8 +80,6 @@ namespace RemoteCW
 
         public void Stop()
         {
-            running = false;
-            pinThread.Join();
             port.Close();
         }
     }

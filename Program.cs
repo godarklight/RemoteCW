@@ -5,6 +5,7 @@ namespace RemoteCW
 {
     class Program
     {
+        public const int DEFAULT_SPEED = 20;
         [STAThread]
         public static void Main(string[] args)
         {

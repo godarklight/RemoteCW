@@ -1,14 +1,14 @@
 //Remote CW
 unsigned long nextTime = 0;
-const int digitalLeftPin = 12;
+const int digitalLeftPin = 10;
 const int digitalRightPin = 11;
 bool lastLeftPin = false;
 bool lastRightPin = false;
 
 void setup() {
   Serial.begin(115200);
-  pinMode(11, INPUT_PULLUP);
-  pinMode(12, INPUT_PULLUP);
+  pinMode(digitalLeftPin, INPUT_PULLUP);
+  pinMode(digitalRightPin, INPUT_PULLUP);
 }
 
 void loop() {
@@ -18,7 +18,7 @@ void loop() {
   {
     bool leftPin = !digitalRead(digitalLeftPin);
     bool rightPin = !digitalRead(digitalRightPin);
-    nextTime = newTime + 10;
+    nextTime = newTime + 1;
     
     if (leftPin != lastLeftPin)
     {

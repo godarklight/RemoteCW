@@ -40,6 +40,7 @@ namespace RemoteCW
         {
             builder.Autoconnect(this);
             DeleteEvent += Window_DeleteEvent;
+            spinWPM.Value = Program.DEFAULT_SPEED;
             spinWPM.ValueChanged += wpmChanged;
             buttonMode.Clicked += modeChanged;
             buttonNetwork.Clicked += networkChanged;

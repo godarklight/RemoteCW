@@ -34,7 +34,7 @@
                 <property name="climb-rate">0.10</property>
                 <property name="snap-to-ticks">True</property>
                 <property name="numeric">True</property>
-                <property name="value">24</property>
+                <property name="value">20</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -80,6 +80,32 @@
               </packing>
             </child>
             <child>
+              <object class="GtkImage" id="displayL">
+                <property name="width-request">20</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="stock">gtk-no</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkImage" id="displayR">
+                <property name="width-request">20</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="stock">gtk-no</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkButton" id="buttonNetwork">
                 <property name="label" translatable="yes">Network Off</property>
                 <property name="visible">True</property>
@@ -89,7 +115,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">3</property>
               </packing>
             </child>
             <child>
@@ -102,7 +128,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">4</property>
               </packing>
             </child>
             <child>
@@ -115,7 +141,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">3</property>
+                <property name="position">5</property>
               </packing>
             </child>
           </object>

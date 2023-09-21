@@ -1,128 +1,111 @@
 using System;
+using System.Collections.Concurrent;
+using PortAudioSharp;
+using System.Runtime.InteropServices;
 using System.Threading;
-using System.Diagnostics;
 
 namespace RemoteCW
 {
-    public class AudioDriver
+    class AudioDriver
     {
-        bool running = true;
-        double[] sineTone;
-        double[] ramp;
-        int offset;
-        KeyDriver key;
-        Process audioProcess;
-        Thread audioThread;
-        bool lastTransmit = false;
-        int zeroCount = 0;
         public bool spot = false;
+        Stream audioStream;
+        AutoResetEvent okRead = new AutoResetEvent(false);
+        KeyDriver keyDriver;
+        public bool currentState = false;
+        float[] carrier;
+        float[] ramp;
+        double lastUnitMs = 0;
+        int carrierPhase = 0;
+        int rampPhase = 0;
+        int samplesLeftInUnit = 1;
+        const double RAMP_TIME_MS = 2.0;
 
-        public AudioDriver(KeyDriver key)
+        public AudioDriver(KeyDriver keyDriver)
         {
-            this.key = key;
-            GenerateSineTone();
-            //ProcessStartInfo psi = new ProcessStartInfo("paplay", "-p --device KEY --client-name RemoteCW --stream-name Key --latency-msec 5 --rate 48000 --channels 1 --format s16le --volume 16384 --raw");
-            ProcessStartInfo psi = new ProcessStartInfo("pw-play", "--latency 2ms --rate 48000 --channels 1 --volume 0.1 -");
-            psi.RedirectStandardInput = true;
-            audioProcess = Process.Start(psi);
-            audioProcess.Start();
-            audioThread = new Thread(new ThreadStart(AudioLoop));
-            audioThread.Start();
+            this.keyDriver = keyDriver;
+            PortAudio.Initialize();
+            DeviceInfo di = PortAudio.GetDeviceInfo(PortAudio.DefaultInputDevice);
+            Console.WriteLine($"Reading from {di.name}");
+            StreamParameters inParam = new StreamParameters();
+            inParam.channelCount = 1;
+            inParam.device = PortAudio.DefaultInputDevice;
+            inParam.sampleFormat = SampleFormat.Float32;
+            inParam.suggestedLatency = 0.01;
+            StreamParameters outParam = new StreamParameters();
+            outParam.channelCount = 1;
+            outParam.device = PortAudio.DefaultOutputDevice;
+            outParam.sampleFormat = SampleFormat.Float32;
+            outParam.suggestedLatency = 0.01;
+            audioStream = new Stream(inParam, outParam, 48000, 0, StreamFlags.NoFlag, AudioCallback, null);
+            audioStream.Start();
+            Setup();
         }
 
-        private void GenerateSineTone()
+        public StreamCallbackResult AudioCallback(IntPtr input, IntPtr output, uint frameCount, ref StreamCallbackTimeInfo timeInfo, StreamCallbackFlags statusFlags, IntPtr userDataPtr)
         {
-            //The nearest tone to 700hz on a 48000sample/sec is 69 samples per sine wave. Nice.
-            sineTone = new double[69];
-            ramp = new double[69];
-            for (int i = 0; i < 69; i++)
+            unsafe
             {
-                double sinePos = (Math.Tau * i) / 69.0;
-                sineTone[i] = Math.Sin(sinePos);
+                float* floatptr = (float*)output.ToPointer();
+                for (int i = 0; i < frameCount; i++)
+                {
+                    *floatptr = carrier[carrierPhase] * ramp[rampPhase] * 0.2f;
+                    floatptr++;
+                    samplesLeftInUnit--;
+                    if (samplesLeftInUnit == 0)
+                    {
+                        samplesLeftInUnit = (int)(48000.0 * (keyDriver.unitMs / 1000.0));
+                        //Console.WriteLine("New state");
+                        currentState = keyDriver.GetState();
+                    }
+                    //Advance carrier
+                    carrierPhase++;
+                    if (carrierPhase == carrier.Length)
+                    {
+                        carrierPhase = 0;
+                    }
+                    //Advance ramp
+                    if ((currentState || spot) && rampPhase < (ramp.Length - 1))
+                    {
+                        rampPhase++;
+                    }
+                    if ((!currentState && !spot) && rampPhase > 0)
+                    {
+                        rampPhase--;
+                    }
+                }
             }
-            for (int i = 0; i < 48; i++)
-            {
-                double sinePos = (Math.Tau * i) / 48.0;
-                ramp[i] = Math.Cos(sinePos / 4);
-            }
+            return StreamCallbackResult.Continue;
         }
 
-        private void AudioLoop()
+        private void Setup()
         {
-            long lastGenerateTime = DateTime.UtcNow.Ticks;
-            //Generate in millisecond chunks. s16 is two bytes per sample, 2 * 48000 * 1/1000
-            byte[] byte1ms = new byte[96];
-            while (running)
-            {
-                long currentTime = DateTime.UtcNow.Ticks;
-                while (currentTime - lastGenerateTime > TimeSpan.TicksPerMillisecond)
-                {
-                    lastGenerateTime += TimeSpan.TicksPerMillisecond;
-                    bool transmit = key.GetState() || spot;
-                    if (transmit)
-                    {
-                        zeroCount = 0;
-                    }
-                    else
-                    {
-                        zeroCount++;
-                    }
-                    GenerateAudioChunk(byte1ms, transmit);
-                    if (zeroCount < 1000 || spot)
-                    {
-                        audioProcess.StandardInput.BaseStream.Write(byte1ms, 0, byte1ms.Length);
-                    }
-                }
-                Thread.Sleep(1);
-            }
-        }
+            carrierPhase = 0;
+            rampPhase = 0;
+            //69 samples generates a sidetone of 695hz, nice.
+            int samplesPerCarrier = 69;
+            int samplesPerRamp = (int)(48000.0 * (RAMP_TIME_MS / 1000.0));
+            carrier = new float[samplesPerCarrier];
+            ramp = new float[samplesPerRamp];
 
-        private void GenerateAudioChunk(byte[] input, bool transmit)
-        {
-            if (transmit)
+            for (int i = 0; i < carrier.Length; i++)
             {
-                zeroCount = 0;
+                //Not -1, we do not want the start and end to be 0.
+                double carrierPos = Math.Tau * (i / (double)carrier.Length);
+                carrier[i] = (float)Math.Sin(carrierPos);
             }
-            if (!transmit && !lastTransmit)
+            for (int i = 0; i < ramp.Length; i++)
             {
-                Array.Clear(input);
-                return;
+                //We do want to hit 1 here.
+                double rampPos = (Math.Tau / 4.0) * (i / ((double)ramp.Length - 1.0));
+                ramp[i] = (float)Math.Sin(rampPos);
             }
-            for (int i = 0; i < input.Length / 2; i++)
-            {
-                double sinValue = sineTone[offset];
-
-                //Ramp up
-                if (transmit && !lastTransmit)
-                {
-                    sinValue = sinValue * ramp[ramp.Length - i - 1];
-                }
-                //Ramp down
-                if (!transmit && lastTransmit)
-                {
-                    sinValue = sinValue * ramp[i];
-                }
-
-                //Convert double to s16
-                int writePos = i * 2;
-                short writeValue = (short)(sinValue * short.MaxValue);
-                input[writePos] = (byte)(writeValue & 0xFF);
-                input[writePos + 1] = (byte)(writeValue >> 8);
-
-                offset++;
-                if (offset == sineTone.Length)
-                {
-                    offset = 0;
-                }
-            }
-            lastTransmit = transmit;
         }
 
         public void Stop()
         {
-            running = false;
-            audioProcess.Close();
-            audioThread.Join();
+            audioStream.Stop();
+            PortAudio.Terminate();
         }
     }
 }

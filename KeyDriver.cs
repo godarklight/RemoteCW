@@ -13,7 +13,7 @@ namespace RemoteCW
         bool wasKeying = false;
         //Timing
         int wpm = 24;
-        int unitMs = 50;
+        public int unitMs = 50;
         int toneLeft = 0;
         int totalLeft = 0;
         //Hardware
@@ -30,6 +30,7 @@ namespace RemoteCW
             this.serial = serial;
             this.network = network;
             serial.SetKeyCallback(ProcessEvent);
+            SetWPM(Program.DEFAULT_SPEED);
         }
 
         public void ProcessEvent(string input)
@@ -82,7 +83,7 @@ namespace RemoteCW
             {
                 network.Update(DateTime.UtcNow.Ticks, state);
                 lastNetworkState = state;
-            }            
+            }
             return state;
         }
 
@@ -91,25 +92,35 @@ namespace RemoteCW
             //Straight key mode
             if (!iambicMode)
             {
+                if (leftKeyEvent)
+                {
+                    leftKeyEvent = false;
+                    return true;
+                }
+                if (rightKeyEvent)
+                {
+                    rightKeyEvent = false;
+                    return true;
+                }
                 return leftKey || rightKey;
             }
             //Iambic mode, start keying
-            if (!wasKeying && (leftKey || rightKey))
+            if (!wasKeying && (leftKey || leftKeyEvent || rightKey || rightKeyEvent))
             {
                 wasKeying = true;
                 if (leftKey)
                 {
                     leftKeyEvent = false;
                     lastKeyLeft = true;
-                    totalLeft = 2 * unitMs;
-                    toneLeft = 1 * unitMs;
+                    totalLeft = 2;
+                    toneLeft = 1;
                 }
                 if (rightKey)
                 {
                     rightKeyEvent = false;
                     lastKeyLeft = false;
-                    totalLeft = 4 * unitMs;
-                    toneLeft = 3 * unitMs;
+                    totalLeft = 4;
+                    toneLeft = 3;
                 }
             }
             if (wasKeying && totalLeft == 0)
@@ -118,15 +129,15 @@ namespace RemoteCW
                 if ((leftKey || leftKeyEvent) && !(rightKey || rightKeyEvent))
                 {
                     leftKeyEvent = false;
-                    totalLeft = 2 * unitMs;
-                    toneLeft = 1 * unitMs;
+                    totalLeft = 2;
+                    toneLeft = 1;
                 }
                 //Right only
                 if (!(leftKey | leftKeyEvent) && (rightKey || rightKeyEvent))
                 {
                     rightKeyEvent = false;
-                    totalLeft = 4 * unitMs;
-                    toneLeft = 3 * unitMs;
+                    totalLeft = 4;
+                    toneLeft = 3;
                 }
                 //Both
                 if ((leftKey || leftKeyEvent) && (rightKey || rightKeyEvent))
@@ -135,15 +146,15 @@ namespace RemoteCW
                     {
                         rightKeyEvent = false;
                         //Play right side now - dah
-                        totalLeft = 4 * unitMs;
-                        toneLeft = 3 * unitMs;
+                        totalLeft = 4;
+                        toneLeft = 3;
                     }
                     else
                     {
                         leftKeyEvent = false;
                         //Play left side - dit
-                        totalLeft = 2 * unitMs;
-                        toneLeft = 1 * unitMs;
+                        totalLeft = 2;
+                        toneLeft = 1;
                     }
                     lastKeyLeft = !lastKeyLeft;
                 }
